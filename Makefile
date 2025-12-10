@@ -90,6 +90,12 @@ BUILD_PACKAGES ?= ./...
 build:
 	@EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) ./hack/build.sh -o $(BUILD_OUTPUT_FILE) $(BUILD_PACKAGES)
 
+
+.PHONY: docker-image-gardenlet
+docker-image-gardenlet:
+	@docker buildx build --load --build-arg EFFECTIVE_VERSION=$(EFFECTIVE_VERSION) --platform $(TARGET_PLATFORMS) -t acuminous/gardener/gardenlet:$(EFFECTIVE_VERSION) -t acuminous/gardener/gardenlet:latest                 -f Dockerfile --target gardenlet .
+
+
 .PHONY: docker-images
 docker-images:
 	@echo "Building docker images with version and tag $(EFFECTIVE_VERSION) for target platforms $(TARGET_PLATFORMS)"
@@ -488,3 +494,7 @@ ci-e2e-kind-ha-multi-node-upgrade: $(KIND) $(YQ)
 	SHOOT_FAILURE_TOLERANCE_TYPE=node GARDENER_PREVIOUS_RELEASE=$(GARDENER_PREVIOUS_RELEASE) GARDENER_RELEASE_DOWNLOAD_PATH=$(GARDENER_RELEASE_DOWNLOAD_PATH) GARDENER_NEXT_RELEASE=$(GARDENER_NEXT_RELEASE) ./hack/ci-e2e-kind-upgrade.sh
 ci-e2e-kind-ha-multi-zone-upgrade: $(KIND) $(YQ)
 	SHOOT_FAILURE_TOLERANCE_TYPE=zone USE_PROVIDER_LOCAL_COREDNS_SERVER=true GARDENER_PREVIOUS_RELEASE=$(GARDENER_PREVIOUS_RELEASE) GARDENER_RELEASE_DOWNLOAD_PATH=$(GARDENER_RELEASE_DOWNLOAD_PATH) GARDENER_NEXT_RELEASE=$(GARDENER_NEXT_RELEASE) ./hack/ci-e2e-kind-upgrade.sh
+
+.PHONY: docker-load-gardenlet
+docker-load-gardenlet: $(KIND)
+	$(KIND) load docker-image acuminous/gardener/gardenlet:$(EFFECTIVE_VERSION) --name gardener-operator-local

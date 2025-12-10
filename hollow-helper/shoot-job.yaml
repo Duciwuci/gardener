@@ -1,0 +1,41 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: shoot-cronjob
+spec:
+  schedule: "*/1 * * * *" 
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: shoot-creator
+            image: ttl.sh/test-docker:24h
+            imagePullPolicy: IfNotPresent
+            command: ["/bin/bash", "/scripts/shoot-script.sh", "--start", "0", "--end", "55"]
+            env:
+            - name: GARDEN_KUBECONFIG
+              value: /etc/kube/garden/garden-config
+            volumeMounts:
+            - name: script-volume
+              mountPath: /scripts
+            - name: dev-volume
+              mountPath: /development
+            - name: garden-volume
+              mountPath: /etc/kube/garden
+          restartPolicy: Never
+          volumes:
+          - name: script-volume
+            configMap:
+              name: shoot-script
+              defaultMode: 0755
+          - name: dev-volume
+            configMap:
+              name: dev-config
+              defaultMode: 0755
+          - name: garden-volume
+            secret:
+              secretName: garden-kubeconfig
+              items:
+              - key: kubeconfig
+                path: garden-config

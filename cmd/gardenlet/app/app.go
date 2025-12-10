@@ -223,6 +223,11 @@ func run(ctx context.Context, cancel context.CancelFunc, log logr.Logger, cfg *g
 		}, runner.BootstrapRunnables...)
 	}
 
+	if gardenlet.IsResponsibleForTesting() {
+		log.Info("Running in testing environment, registering testing controllers")
+		// do something here
+	}
+
 	if err := mgr.Add(runner); err != nil {
 		return fmt.Errorf("failed adding runnables to manager: %w", err)
 	}
@@ -472,6 +477,77 @@ func (g *garden) Start(ctx context.Context) error {
 
 	if err := controllerutils.AddAllRunnables(g.mgr, runnables...); err != nil {
 		return err
+	}
+
+	if gardenlet.IsResponsibleForTesting() {
+		loadTest := loadTest{
+			gardenClient: gardenCluster.GetClient(),
+			log:          log,
+			seedName:     g.config.SeedConfig.Name,
+			loadConfig: LoadConfig{
+				Resources: []OperationLoads{
+					{
+						Group:   "",
+						Version: "v1",
+						Kind:    "ConfigMap",
+						Get:     0.0074074074122845186,
+						List:    0.0037037037061422593,
+						Post:    0,
+						Patch:   0,
+					},
+					{
+						Group:   "core.gardener.cloud",
+						Version: "v1beta1",
+						Kind:    "ManagedSeed",
+						Get:     0.0012345816188462154,
+						List:    0.009876611797858571,
+						Post:    0,
+						Patch:   0,
+					},
+					{
+						Group:   "",
+						Version: "v1",
+						Kind:    "Secret",
+						Get:     0.030599836387750674,
+						List:    0.0037037517154016276,
+						Post:    0.0037037517154016276,
+						Patch:   0.005820114643227103,
+					},
+					{
+						Group:   "core.gardener.cloud",
+						Version: "v1beta1",
+						Kind:    "Seed",
+						Get:     0,
+						List:    0.0030864369000724004,
+						Post:    0,
+						Patch:   0.0012345816188462154,
+					},
+					{
+						Group:   "",
+						Version: "v1",
+						Kind:    "ServiceAccount",
+						Get:     0.0012345816188081102,
+						List:    0.005555600137650517,
+						Post:    0,
+						Patch:   0,
+					},
+					{
+						Group:   "core.gardener.cloud",
+						Version: "v1beta1",
+						Kind:    "Shoot",
+						Get:     0,
+						List:    0.0030864369000724004,
+						Post:    0,
+						Patch:   0.0067901748977861704,
+					},
+				},
+				GetShootPeriod: 17 * time.Minute,
+			},
+		}
+
+		if err := g.mgr.Add(loadTest); err != nil {
+			return fmt.Errorf("failed adding load test runnable to manager: %w", err)
+		}
 	}
 
 	if gardenlet.IsResponsibleForSelfHostedShoot() {

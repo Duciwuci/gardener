@@ -1,10 +1,25 @@
+hollow: true
 replicaCount: 1
+resources:
+  requests:
+    cpu: 10m
+    memory: 10Mi
+image:
+    repository: acuminous/gardener/gardenlet
+    tag: v1.133.0-dev-c2e26ac56beae05a8b13e3b4351f80df25d1e72b-dirty
+    pullPolicy: Never
 config:
+  leaderElection:
+    # This will be overridden
+    resourceName: gardenlet-leader-election
+    resourceNamespace: default
   gardenClientConnection:
     kubeconfigSecret:
+      # This will be overridden
       name: gardenlet-kubeconfig-seed-1
       namespace: default
     bootstrapKubeconfig:
+      # This will be overridden
       name: gardenlet-kubeconfig-bootstrap
       namespace: garden
       kubeconfig: |
@@ -28,7 +43,7 @@ config:
         users:
         - name: gardenlet-bootstrap
           user:
-            token: 07401b.f395accd246ae52d
+            token: TOKEN.f395accd246ae52d
   controllers:
     shoot:
       reconcileInMaintenanceOnly: true
@@ -41,7 +56,6 @@ config:
     IstioTLSTermination: true
     OpenTelemetryCollector: true
     UseUnifiedHTTPProxyPort: true
-    VPAInPlaceUpdates: true
   logging:
     enabled: true
     vali:
@@ -56,6 +70,7 @@ config:
     apiVersion: core.gardener.cloud/v1beta1
     kind: Seed
     metadata:
+      # This will be overridden
       name: seed-1
       labels:
         base: kind
@@ -97,7 +112,7 @@ config:
         controller:
           kind: nginx
       networks:
-        nodes: 172.18.0.0/24
+        nodes: 172.18.0.0/16
         # Subnet for automatic pod IP assignment (calico default IPPool) in the kind cluster.
         pods: 10.1.0.0/16
         services: 10.2.0.0/16
